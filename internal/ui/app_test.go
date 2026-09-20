@@ -222,6 +222,15 @@ func TestAppNavAndOps(t *testing.T) {
 	if a.cur().Current().Name != "delta.txt" {
 		t.Error("cursor after a rename")
 	}
+	// A: full name incl. ext
+	keys(a, "A")
+	if a.mode != ModeInput || a.input != "delta.txt" || a.prompt != "rename: " {
+		t.Errorf("A prompt: input=%q prompt=%q", a.input, a.prompt)
+	}
+	keys(a, "\x08\x08\x08md\n")
+	if _, err := os.Stat(filepath.Join(d, "dir1", "delta.md")); err != nil {
+		t.Error("A rename changed ext")
+	}
 	// selection + delete with confirm
 	keys(a, "gg")
 	keys(a, "tj")

@@ -81,6 +81,7 @@ func init() {
 		"p":     (*App).paste,
 		"D":     (*App).deleteTargets, "<Del>": (*App).deleteTargets,
 		"cw":    (*App).rename,
+		"A":     (*App).rename,
 		"a":     (*App).renameStem,
 		"za":    (*App).toggleHidden,
 		"S":     func(a *App) { a.openMenu(a.sortMenu()) },
