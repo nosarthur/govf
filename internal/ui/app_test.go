@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/gdamore/tcell/v2"
+
+	"github.com/nosarthur/govf/internal/fsx"
 )
 
 func newTestApp(t *testing.T, dir string) (*App, tcell.SimulationScreen) {
@@ -218,6 +220,19 @@ func TestAppNavAndOps(t *testing.T) {
 	keys(a, "q")
 	if !a.quit {
 		t.Error("q")
+	}
+}
+
+func TestEntryStyle(t *testing.T) {
+	fg := func(st tcell.Style) tcell.Color { f, _, _ := st.Decompose(); return f }
+	if fg(entryStyle(fsx.Entry{Name: "d", IsDir: true})) != fg(stDir) {
+		t.Error("dir style")
+	}
+	if fg(entryStyle(fsx.Entry{Name: "x.PNG"})) != fg(stImage) {
+		t.Error("image style")
+	}
+	if fg(entryStyle(fsx.Entry{Name: "x.txt"})) != fg(stDefault) {
+		t.Error("plain style")
 	}
 }
 

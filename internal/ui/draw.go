@@ -15,8 +15,9 @@ import (
 var (
 	stDefault = tcell.StyleDefault
 	stHeader  = tcell.StyleDefault.Bold(true).Foreground(tcell.ColorYellow)
-	stDir     = tcell.StyleDefault.Foreground(tcell.ColorBlue).Bold(true)
+	stDir     = tcell.StyleDefault.Foreground(tcell.NewRGBColor(0x5f, 0xaf, 0xff)).Bold(true)
 	stLink    = tcell.StyleDefault.Foreground(tcell.ColorTeal)
+	stImage   = tcell.StyleDefault.Foreground(tcell.NewRGBColor(0xd7, 0x5f, 0xd7))
 	stSel     = tcell.StyleDefault.Foreground(tcell.ColorYellow).Bold(true)
 	stCursor  = tcell.StyleDefault.Reverse(true)
 	stErr     = tcell.StyleDefault.Foreground(tcell.ColorRed).Bold(true)
@@ -89,13 +90,7 @@ func (a *App) drawPanel(x, y, w, h int, p *Panel, active bool) {
 			break
 		}
 		e := p.Entries[idx]
-		st := stDefault
-		switch {
-		case e.IsDir:
-			st = stDir
-		case e.IsLink:
-			st = stLink
-		}
+		st := entryStyle(e)
 		name := e.Name
 		if e.IsDir {
 			name += "/"
@@ -121,6 +116,19 @@ func (a *App) drawPanel(x, y, w, h int, p *Panel, active bool) {
 	}
 }
 
+// entryStyle: dir > link > image > plain.
+func entryStyle(e fsx.Entry) tcell.Style {
+	switch {
+	case e.IsDir:
+		return stDir
+	case e.IsLink:
+		return stLink
+	case preview.IsImagePath(e.Name):
+		return stImage
+	}
+	return stDefault
+}
+
 // trimPathLeft keeps the tail of long paths.
 func trimPathLeft(p string, w int) string {
 	if runewidth.StringWidth(p) <= w {
@@ -143,12 +151,11 @@ func (a *App) drawPreview(x, y, w, h int) {
 			return
 		}
 		for i := 0; i < h && i < len(es); i++ {
-			st := stDefault
 			n := es[i].Name
 			if es[i].IsDir {
-				st, n = stDir, n+"/"
+				n += "/"
 			}
-			a.puts(x, y+1+i, w, " "+n, st)
+			a.puts(x, y+1+i, w, " "+n, entryStyle(es[i]))
 		}
 		return
 	}
