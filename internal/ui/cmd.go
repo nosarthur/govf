@@ -27,25 +27,24 @@ func (a *App) runCommand(line string) {
 		if arg == "" {
 			a.rename()
 		} else {
-			e := a.cur().Current()
-			if e != nil {
-				old := e.Path
-				if err := fsx.Rename(old, joinDir(old, arg)); err != nil {
-					a.setErr(err)
-					return
-				}
-				a.reloadAll()
-				a.cur().SeekName(arg)
+			if e := a.cur().Current(); e != nil {
+				a.renameTo(e.Path, arg)
 			}
 		}
 	case "delete", "d":
-		a.deleteTargets()
+		a.trashTargets()
 	case "yank", "y":
 		a.yank(false)
-	case "cut":
-		a.yank(true)
 	case "paste":
 		a.paste()
+	case "undo":
+		a.undo()
+	case "redo":
+		a.redo()
+	case "empty":
+		a.emptyTrash()
+	case "trash":
+		a.cd(a.trash)
 	case "sort":
 		if k, ok := fsx.ParseSortKey(arg); ok {
 			a.setSort(k)
@@ -63,7 +62,7 @@ func (a *App) runCommand(line string) {
 	case "sync":
 		a.other().Load(a.cur().Dir)
 	case "help", "h":
-		a.setMsg("j/k h/l gg/G Tab w t yy dd p D cw za S(sort) / n N :q")
+		a.setMsg("j/k h/l gg/G Tab w t yy dd p u C-r DD cw a A za S(sort) / n N :q")
 	default:
 		a.setMsg("unknown command: %s", name)
 	}

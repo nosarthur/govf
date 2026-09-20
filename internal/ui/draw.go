@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -24,9 +23,6 @@ var (
 	stDim     = tcell.StyleDefault.Dim(true)
 	stSep     = tcell.StyleDefault.Foreground(tcell.ColorGray)
 )
-
-// joinDir: sibling path of p named name.
-func joinDir(p, name string) string { return filepath.Join(filepath.Dir(p), name) }
 
 func (a *App) puts(x, y, w int, s string, st tcell.Style) {
 	col := 0

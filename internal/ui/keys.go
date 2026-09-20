@@ -47,6 +47,8 @@ func keyName(ev *tcell.EventKey) string {
 		return "<C-b>"
 	case tcell.KeyCtrlL:
 		return "<C-l>"
+	case tcell.KeyCtrlR:
+		return "<C-r>"
 	case tcell.KeyCtrlC:
 		return "<C-c>"
 	}
@@ -77,9 +79,11 @@ func init() {
 		"yf":    (*App).yankPath,
 		"yd":    (*App).yankDir,
 		"yn":    (*App).yankName,
-		"dd":    func(a *App) { a.yank(true) },
+		"dd":    (*App).trashTargets,
 		"p":     (*App).paste,
-		"D":     (*App).deleteTargets, "<Del>": (*App).deleteTargets,
+		"u":     (*App).undo,
+		"<C-r>": (*App).redo,
+		"D":     (*App).deleteTargets, "DD": (*App).deleteTargets, "<Del>": (*App).deleteTargets,
 		"cw":    (*App).rename,
 		"A":     (*App).rename,
 		"a":     (*App).renameStem,

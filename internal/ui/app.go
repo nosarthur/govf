@@ -61,6 +61,10 @@ type App struct {
 
 	clipTool []string // external clipboard cmd, if any
 
+	trash     string // trash dir for dd
+	undoStack []op
+	redoStack []op
+
 	proto    preview.Protocol
 	raw      io.Writer  // tty for image/clipboard escapes; nil => blocks, no OSC52
 	imgWant  *placement // image requested this frame
@@ -90,6 +94,7 @@ func New(scr tcell.Screen, left, right string) *App {
 	a.panels[1] = NewPanel(right)
 	a.preview = true
 	a.clipTool = findClipTool()
+	a.trash = TrashDir()
 	return a
 }
 
@@ -268,27 +273,46 @@ func (a *App) paste() {
 		return
 	}
 	dst := a.cur().Dir
-	n := 0
+	var steps []step
 	for _, src := range a.clip.paths {
+		var to string
 		var err error
 		if a.clip.cut {
-			_, err = fsx.Move(src, dst)
+			to, err = fsx.Move(src, dst)
+			a.removeEmptyTrashSlot(src)
+			steps = append(steps, step{stepMove, src, to})
 		} else {
-			_, err = fsx.Copy(src, dst)
+			to, err = fsx.Copy(src, dst)
+			steps = append(steps, step{stepCopy, src, to})
 		}
 		if err != nil {
+			steps = steps[:len(steps)-1]
 			a.setErr(err)
 			break
 		}
-		n++
 	}
 	if a.clip.cut {
+		a.record("move", steps...)
 		a.clip = clipboard{}
+	} else {
+		a.record("copy", steps...)
 	}
 	a.reloadAll()
 	if !a.msgErr {
-		a.setMsg("%d pasted", n)
+		a.setMsg("%d pasted", len(steps))
 	}
+}
+
+// renameTo renames cursor entry's path old to name (same dir); undoable.
+func (a *App) renameTo(old, name string) {
+	dst := filepath.Join(filepath.Dir(old), name)
+	if err := fsx.Rename(old, dst); err != nil {
+		a.setErr(err)
+		return
+	}
+	a.record("rename", step{stepMove, old, dst})
+	a.reloadAll()
+	a.cur().SeekName(name)
 }
 
 func (a *App) deleteTargets() {
@@ -296,9 +320,9 @@ func (a *App) deleteTargets() {
 	if len(t) == 0 {
 		return
 	}
-	q := fmt.Sprintf("delete %d items?", len(t))
+	q := fmt.Sprintf("permanently delete %d items?", len(t))
 	if len(t) == 1 {
-		q = fmt.Sprintf("delete %s?", filepath.Base(t[0]))
+		q = fmt.Sprintf("permanently delete %s?", filepath.Base(t[0]))
 	}
 	a.confirm(q, func() {
 		for _, p := range t {
@@ -351,12 +375,7 @@ func (a *App) renameWith(keepExt bool) {
 		if name == filepath.Base(old) {
 			return
 		}
-		if err := fsx.Rename(old, filepath.Join(filepath.Dir(old), name)); err != nil {
-			a.setErr(err)
-			return
-		}
-		a.reloadAll()
-		a.cur().SeekName(name)
+		a.renameTo(old, name)
 	})
 }
 
@@ -365,10 +384,16 @@ func (a *App) mkdir(name string) {
 		a.startLine(ModeInput, "mkdir: ", "", a.mkdir)
 		return
 	}
-	if err := fsx.Mkdir(filepath.Join(a.cur().Dir, name)); err != nil {
+	p := filepath.Join(a.cur().Dir, name)
+	if _, err := os.Lstat(p); err == nil {
+		a.setErr(fmt.Errorf("%s exists", name))
+		return
+	}
+	if err := fsx.Mkdir(p); err != nil {
 		a.setErr(err)
 		return
 	}
+	a.record("mkdir", step{stepCreate, "", p})
 	a.reloadAll()
 	a.cur().SeekName(name)
 }
@@ -378,10 +403,12 @@ func (a *App) touch(name string) {
 		a.startLine(ModeInput, "touch: ", "", a.touch)
 		return
 	}
-	if err := fsx.Touch(filepath.Join(a.cur().Dir, name)); err != nil {
+	p := filepath.Join(a.cur().Dir, name)
+	if err := fsx.Touch(p); err != nil {
 		a.setErr(err)
 		return
 	}
+	a.record("touch", step{stepCreate, "", p})
 	a.reloadAll()
 	a.cur().SeekName(name)
 }

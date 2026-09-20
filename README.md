@@ -20,9 +20,11 @@ two independent panels.
 | `Tab` | switch panel |
 | `w` | toggle preview panel |
 | `t`, `Space` | toggle selection (Space also moves down) |
-| `yy` / `dd` / `p` | yank / cut / paste into current dir |
+| `yy` / `p` | yank / paste (copy) into current dir |
+| `dd` | delete to trash (`~/.local/share/govf/trash`, or `$GOVF_TRASH`); `p` afterwards puts it back into current dir |
+| `u` / `Ctrl-r` | undo / redo last file op (dd, p, rename, mkdir, touch) |
+| `DD`, `D`, `Del` | delete permanently (confirm, not undoable) |
 | `yf` / `yd` / `yn` | copy full path / current dir path / file name to system clipboard |
-| `D`, `Del` | delete selection or cursor (confirm) |
 | `A`, `cw` | rename, editing full name incl. extension |
 | `a` | rename, editing name without its extension |
 | `za` | toggle dotfiles |
@@ -35,8 +37,9 @@ two independent panels.
 
 ## Commands (`:`)
 
-`q` `cd PATH` `mkdir NAME` `touch NAME` `rename NAME` `delete` `yank` `cut`
-`paste` `sort name|size|time|reverse` `reverse` `hidden` `view` `sync` `help`
+`q` `cd PATH` `mkdir NAME` `touch NAME` `rename NAME` `delete` (to trash)
+`yank` `paste` `undo` `redo` `empty` (trash) `trash` (cd there)
+`sort name|size|time|reverse` `reverse` `hidden` `view` `sync` `help`
 
 `mkdir`/`touch`/`rename` without an argument prompt for input.
 

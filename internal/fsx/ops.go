@@ -59,16 +59,27 @@ func Copy(src, dstDir string) (string, error) {
 // Move moves src into dstDir; falls back to copy+delete across devices.
 func Move(src, dstDir string) (string, error) {
 	dst := UniqueDest(filepath.Join(dstDir, filepath.Base(src)))
+	return dst, MoveTo(src, dst)
+}
+
+// MoveTo moves src to exact path dst; refuses to clobber; creates parent.
+func MoveTo(src, dst string) error {
 	if inside(src, dst) {
-		return "", errors.New("cannot move dir into itself")
+		return errors.New("cannot move dir into itself")
+	}
+	if _, err := os.Lstat(dst); err == nil {
+		return fmt.Errorf("%s exists", dst)
+	}
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return err
 	}
 	if err := os.Rename(src, dst); err == nil {
-		return dst, nil
+		return nil
 	}
 	if err := copyPath(src, dst); err != nil {
-		return "", err
+		return err
 	}
-	return dst, os.RemoveAll(src)
+	return os.RemoveAll(src)
 }
 
 // inside: child is parent or under it.

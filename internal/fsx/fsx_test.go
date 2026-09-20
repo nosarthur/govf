@@ -134,6 +134,16 @@ func TestCopyMoveDelete(t *testing.T) {
 	if err := Rename(m, p2); err == nil {
 		t.Fatal("rename clobbered")
 	}
+	if err := MoveTo(m, p2); err == nil {
+		t.Fatal("MoveTo clobbered")
+	}
+	deep := filepath.Join(d, "new", "deep", "f")
+	if err := MoveTo(m, deep); err != nil {
+		t.Fatal(err)
+	}
+	if err := MoveTo(deep, m); err != nil {
+		t.Fatal(err)
+	}
 	if err := Rename(m, filepath.Join(dst, "renamed")); err != nil {
 		t.Fatal(err)
 	}

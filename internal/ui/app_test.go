@@ -20,6 +20,7 @@ import (
 
 func newTestApp(t *testing.T, dir string) (*App, tcell.SimulationScreen) {
 	t.Helper()
+	t.Setenv("GOVF_TRASH", filepath.Join(t.TempDir(), "trash"))
 	s := tcell.NewSimulationScreen("")
 	if err := s.Init(); err != nil {
 		t.Fatal(err)
@@ -261,6 +262,9 @@ func TestAppNavAndOps(t *testing.T) {
 	if len(a.cur().Entries) != 1 {
 		t.Errorf("delete: %d left", len(a.cur().Entries))
 	}
+	if len(a.undoStack) > 0 && a.undoStack[len(a.undoStack)-1].desc == "delete" {
+		t.Error("permanent delete must not be undoable")
+	}
 	// sync + quit
 	keys(a, ":sync\n")
 	if a.other().Dir != a.cur().Dir {
@@ -347,6 +351,107 @@ func TestYankClipboard(t *testing.T) {
 	keys(a, "yy")
 	if len(a.clip.paths) != 1 {
 		t.Error("yy")
+	}
+}
+
+func exists(p string) bool { _, err := os.Lstat(p); return err == nil }
+
+func TestTrashUndoRedo(t *testing.T) {
+	d := setup(t)
+	a, _ := newTestApp(t, d)
+	alpha := filepath.Join(d, "alpha.txt")
+	dir1 := filepath.Join(d, "dir1")
+
+	// dd -> trash, original name kept in a slot dir
+	keys(a, "/alpha\ndd")
+	if exists(alpha) || len(a.clip.paths) != 1 || !a.clip.cut {
+		t.Fatalf("dd: exists=%v clip=%+v", exists(alpha), a.clip)
+	}
+	tp := a.clip.paths[0]
+	if filepath.Base(tp) != "alpha.txt" || filepath.Dir(filepath.Dir(tp)) != a.trash || !exists(tp) {
+		t.Fatalf("trash path %s", tp)
+	}
+	// u restores from trash, slot dir cleaned
+	keys(a, "u")
+	if !exists(alpha) || exists(filepath.Dir(tp)) || len(a.clip.paths) != 0 {
+		t.Fatalf("undo dd: alpha=%v slot=%v", exists(alpha), exists(filepath.Dir(tp)))
+	}
+	// C-r re-trashes
+	a.handleKey(tcell.NewEventKey(tcell.KeyCtrlR, 0, 0))
+	if exists(alpha) || !exists(tp) {
+		t.Fatal("redo dd")
+	}
+	// dd then p into dir1 = move from trash; u reverses the put
+	keys(a, "u")
+	keys(a, "/alpha\ndd")
+	tp = a.clip.paths[0]
+	keys(a, "gglp")
+	moved := filepath.Join(dir1, "alpha.txt")
+	if !exists(moved) || exists(tp) || exists(filepath.Dir(tp)) {
+		t.Fatal("put from trash")
+	}
+	keys(a, "u")
+	if exists(moved) || !exists(tp) {
+		t.Fatal("undo put")
+	}
+	keys(a, "u")
+	if !exists(alpha) {
+		t.Fatal("undo dd after put")
+	}
+	keys(a, "h")
+
+	// yank+paste undo trashes the copy
+	keys(a, "/alpha\nyy")
+	keys(a, "gglp")
+	if !exists(moved) {
+		t.Fatal("copy")
+	}
+	keys(a, "u")
+	if exists(moved) || !exists(alpha) {
+		t.Fatal("undo copy")
+	}
+	a.handleKey(tcell.NewEventKey(tcell.KeyCtrlR, 0, 0))
+	if !exists(moved) {
+		t.Fatal("redo copy")
+	}
+	keys(a, "h")
+
+	// rename undo
+	keys(a, "/beta\nA\x08\x08\x08md\n")
+	beta := filepath.Join(d, "beta.txt")
+	if exists(beta) || !exists(filepath.Join(d, "beta.md")) {
+		t.Fatal("rename")
+	}
+	keys(a, "u")
+	if !exists(beta) {
+		t.Fatal("undo rename")
+	}
+	// mkdir undo
+	keys(a, ":mkdir nd\n")
+	nd := filepath.Join(d, "nd")
+	keys(a, "u")
+	if exists(nd) {
+		t.Fatal("undo mkdir")
+	}
+	keys(a, "u")
+	if exists(beta) == false {
+		t.Fatal("undo ordering")
+	}
+	// undo blocked when target exists
+	keys(a, "/alpha\ndd")
+	os.WriteFile(alpha, []byte("new"), 0o644)
+	keys(a, "u")
+	if !a.msgErr || len(a.undoStack) == 0 {
+		t.Errorf("undo conflict: msg=%q", a.msg)
+	}
+	// :empty
+	keys(a, ":empty\ny")
+	if des, _ := os.ReadDir(a.trash); len(des) != 0 || len(a.undoStack) != 0 {
+		t.Error("empty trash")
+	}
+	keys(a, "u")
+	if a.msg != "nothing to undo" {
+		t.Errorf("msg %q", a.msg)
 	}
 }
 
