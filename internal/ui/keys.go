@@ -4,8 +4,6 @@ import (
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
-
-	"github.com/nosarthur/govf/internal/fsx"
 )
 
 // keyName maps an event to a vim-ish key name.
@@ -81,16 +79,13 @@ func init() {
 		"D":     (*App).deleteTargets, "<Del>": (*App).deleteTargets,
 		"cw":    (*App).rename,
 		"za":    (*App).toggleHidden,
-		"sn":    func(a *App) { a.setSort(fsx.SortName) },
-		"ss":    func(a *App) { a.setSort(fsx.SortSize) },
-		"st":    func(a *App) { a.setSort(fsx.SortTime) },
-		"sr":    (*App).toggleReverse,
+		"S":     func(a *App) { a.openMenu(a.sortMenu()) },
 		"~":     func(a *App) { a.cd("~") },
 		":":     func(a *App) { a.startLine(ModeCmd, ":", "", nil) },
 		"/":     func(a *App) { a.startLine(ModeSearch, "/", "", nil) },
 		"n":     func(a *App) { a.searchNext(false) },
 		"N":     func(a *App) { a.searchNext(true) },
-		"<C-l>": func(a *App) { a.reloadAll(); a.scr.Sync() },
+		"<C-l>": func(a *App) { a.reloadAll(); a.scr.Sync(); a.invalidateImage() },
 		"q":     func(a *App) { a.quit = true },
 		"<C-c>": func(a *App) { a.quit = true },
 		"<Esc>": func(a *App) { a.cur().Selected = map[string]bool{}; a.msg = "" },

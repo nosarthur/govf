@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"bytes"
 	"image"
 	"image/color"
 	"image/png"
@@ -12,6 +13,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 
 	"github.com/nosarthur/govf/internal/fsx"
+	"github.com/nosarthur/govf/internal/preview"
 )
 
 func newTestApp(t *testing.T, dir string) (*App, tcell.SimulationScreen) {
@@ -100,21 +102,37 @@ func TestAppNavAndOps(t *testing.T) {
 	if a.cur().Dir != d || a.cur().Current().Name != "dir1" {
 		t.Error("up")
 	}
-	// sort keys
-	keys(a, "ss")
-	if a.cur().Sort.Key.String() != "size" {
-		t.Error("ss")
+	// sort menu
+	keys(a, "S")
+	if a.mode != ModeMenu || a.menu == nil {
+		t.Fatal("S menu")
 	}
-	keys(a, "sr")
+	a.draw()
+	if out := screenText(s); !strings.Contains(out, "Sort by") || !strings.Contains(out, "[s] size") {
+		t.Errorf("menu not drawn:\n%s", out)
+	}
+	keys(a, "s")
+	if a.mode != ModeNormal || a.cur().Sort.Key.String() != "size" {
+		t.Error("menu s")
+	}
+	keys(a, "Sr")
 	if !a.cur().Sort.Reverse || a.cur().Entries[2].Name != "beta.txt" {
-		t.Errorf("sr: %v", a.cur().Entries[2].Name)
+		t.Errorf("menu r: %v", a.cur().Entries[2].Name)
+	}
+	keys(a, "S\x1b")
+	if a.mode != ModeNormal || a.menu != nil {
+		t.Error("menu esc")
+	}
+	keys(a, "Sjjj\n") // cursor starts on size(1) -> wraps to name(0)
+	if a.cur().Sort.Key.String() != "name" {
+		t.Errorf("menu nav: %s", a.cur().Sort.Key)
 	}
 	keys(a, ":sort time\n")
 	if a.cur().Sort.Key.String() != "time" {
 		t.Error(":sort time")
 	}
-	keys(a, "sn")
-	keys(a, "sr")
+	keys(a, "Sn")
+	keys(a, "Sr")
 	// hidden toggle
 	keys(a, "za")
 	if len(a.cur().Entries) != 5 {
@@ -220,6 +238,45 @@ func TestAppNavAndOps(t *testing.T) {
 	keys(a, "q")
 	if !a.quit {
 		t.Error("q")
+	}
+}
+
+func TestNativeImageFlush(t *testing.T) {
+	d := t.TempDir()
+	img := image.NewRGBA(image.Rect(0, 0, 8, 8))
+	f, _ := os.Create(filepath.Join(d, "g.png"))
+	png.Encode(f, img)
+	f.Close()
+	os.WriteFile(filepath.Join(d, "a.txt"), []byte("hi"), 0o644)
+	a, s := newTestApp(t, d)
+	var raw bytes.Buffer
+	a.SetImageProtocol(preview.ProtoITerm, &raw)
+	keys(a, "j") // g.png
+	a.draw()
+	out := raw.String()
+	if !strings.Contains(out, "\x1b[2;42H\x1b]1337;File=inline=1;") {
+		t.Errorf("iterm seq not written at right panel origin: %q", out[:min(60, len(out))])
+	}
+	if strings.Contains(screenText(s), "▀") {
+		t.Error("blocks drawn in native mode")
+	}
+	raw.Reset()
+	a.draw() // unchanged: no resend
+	if raw.Len() != 0 {
+		t.Error("image resent without change")
+	}
+	keys(a, "k") // a.txt: image removed
+	a.draw()
+	if a.imgShown != nil {
+		t.Error("image still shown")
+	}
+	// blocks fallback when no writer
+	a.SetImageProtocol(preview.ProtoITerm, nil)
+	a.pvCache = pvCache{}
+	keys(a, "j")
+	a.draw()
+	if !strings.Contains(screenText(s), "▀") {
+		t.Error("blocks fallback")
 	}
 }
 

@@ -63,7 +63,7 @@ func (a *App) runCommand(line string) {
 	case "sync":
 		a.other().Load(a.cur().Dir)
 	case "help", "h":
-		a.setMsg("j/k h/l gg/G Tab w t yy dd p D cw za sn/ss/st/sr / n N :q")
+		a.setMsg("j/k h/l gg/G Tab w t yy dd p D cw za S(sort) / n N :q")
 	default:
 		a.setMsg("unknown command: %s", name)
 	}

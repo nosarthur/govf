@@ -24,7 +24,7 @@ two independent panels.
 | `D`, `Del` | delete selection or cursor (confirm) |
 | `cw` | rename |
 | `za` | toggle dotfiles |
-| `sn` `ss` `st` `sr` | sort by name / size / time; reverse |
+| `S` | sort menu: `n` name, `s` size, `t` time, `r` reverse (j/k + Enter also work) |
 | `/`, `n`, `N` | search by substring, next / prev |
 | `~` | home dir |
 | `Ctrl-l` | reload both panels |
@@ -41,5 +41,8 @@ two independent panels.
 ## Preview
 
 - Text: first screenful of lines, tabs expanded; binary files flagged.
-- Images: png, jpeg, gif, bmp, tiff, webp scaled to fit and drawn with `▀`
-  truecolor cells (needs a truecolor terminal).
+- Images: png, jpeg, gif, bmp, tiff, webp. On iTerm2/WezTerm the file is sent
+  with the OSC 1337 inline-image protocol (same as `imgcat`); on kitty the
+  kitty graphics protocol. Elsewhere (or under tmux) images fall back to `▀`
+  truecolor half-block cells. Override with `GOVF_IMAGES=iterm|kitty|blocks`.
+  Large or non-png/jpeg/gif files are re-encoded as PNG at most 1600px.

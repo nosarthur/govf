@@ -41,7 +41,8 @@ type Cell struct {
 type Result struct {
 	Kind  Kind
 	Lines []string // KindText
-	Cells [][]Cell // KindImage, [row][col]
+	Cells [][]Cell // KindImage (blocks), [row][col]
+	Data  []byte   // KindImage (native protocol payload)
 	Err   error
 }
 

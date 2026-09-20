@@ -9,6 +9,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 
+	"github.com/nosarthur/govf/internal/preview"
 	"github.com/nosarthur/govf/internal/ui"
 )
 
@@ -42,7 +43,15 @@ func main() {
 		fatal(err)
 	}
 	defer scr.Fini()
-	ui.New(scr, left, right).Run()
+	app := ui.New(scr, left, right)
+	if proto := preview.DetectProtocol(os.Getenv); proto != preview.ProtoBlocks {
+		if ts, ok := scr.(interface{ Tty() (tcell.Tty, bool) }); ok {
+			if tty, ok := ts.Tty(); ok {
+				app.SetImageProtocol(proto, tty)
+			}
+		}
+	}
+	app.Run()
 }
 
 func absDir(p string) string {

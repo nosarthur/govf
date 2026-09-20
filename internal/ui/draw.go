@@ -54,15 +54,53 @@ func (a *App) draw() {
 	lw := W / 2
 	rw := W - lw - 1
 	listH := H - 3
+	a.imgWant = nil
 	// two sides
 	a.drawSide(0, 0, lw, listH, 0)
 	for y := 0; y < listH+1; y++ {
 		s.SetContent(lw, y, '│', nil, stSep)
 	}
 	a.drawSide(lw+1, 0, rw, listH, 1)
+	if a.mode == ModeMenu {
+		px := 0
+		if a.active == 1 {
+			px = lw + 1
+		}
+		a.drawMenu(px, 1, lw, listH)
+	}
 	a.drawStatus(H-2, W)
 	a.drawCmdline(H-1, W)
-	s.Show()
+	a.flush()
+}
+
+// flush pushes cells, then (re)sends native image if its placement changed.
+func (a *App) flush() {
+	changed := (a.imgWant == nil) != (a.imgShown == nil) ||
+		(a.imgWant != nil && a.imgWant.key != a.imgShown.key)
+	if !changed {
+		a.scr.Show()
+		return
+	}
+	if a.imgShown != nil && a.proto == preview.ProtoKitty {
+		a.raw.Write(preview.KittyDelete())
+	}
+	a.scr.Sync() // full repaint clears old image cells
+	if p := a.imgWant; p != nil {
+		var seq []byte
+		switch a.proto {
+		case preview.ProtoITerm:
+			seq = preview.ITermSeq(p.data, p.w, p.h)
+		case preview.ProtoKitty:
+			seq = preview.KittySeq(p.data, p.w, p.h)
+		}
+		fmt.Fprintf(a.raw, "\x1b[%d;%dH", p.y+1, p.x+1)
+		a.raw.Write(seq)
+		if a.mode != ModeNormal { // restore cmdline cursor moved by image
+			_, H := a.scr.Size()
+			fmt.Fprintf(a.raw, "\x1b[%d;%dH", H, runewidth.StringWidth(a.prompt+a.input)+1)
+		}
+	}
+	a.imgShown = a.imgWant
 }
 
 func (a *App) drawSide(x, y, w, h, idx int) {
@@ -116,6 +154,16 @@ func (a *App) drawPanel(x, y, w, h int, p *Panel, active bool) {
 	}
 }
 
+// render: native image payload when protocol supports it, else cells/text.
+func (a *App) render(path string, w, h int) preview.Result {
+	if a.proto != preview.ProtoBlocks {
+		if r := preview.Native(path, a.proto); r.Kind == preview.KindImage {
+			return r
+		}
+	}
+	return preview.File(path, w, h)
+}
+
 // entryStyle: dir > link > image > plain.
 func entryStyle(e fsx.Entry) tcell.Style {
 	switch {
@@ -161,9 +209,13 @@ func (a *App) drawPreview(x, y, w, h int) {
 	}
 	key := fmt.Sprintf("%s|%d|%d|%d|%d", e.Path, e.Size, e.ModTime.UnixNano(), w, h)
 	if a.pvCache.key != key {
-		a.pvCache = pvCache{key: key, res: preview.File(e.Path, w, h)}
+		a.pvCache = pvCache{key: key, res: a.render(e.Path, w, h)}
 	}
 	r := a.pvCache.res
+	if r.Kind == preview.KindImage && r.Data != nil {
+		a.imgWant = &placement{key: fmt.Sprintf("%s|%d|%d", key, x, y), x: x, y: y + 1, w: w, h: h, data: r.Data}
+		return
+	}
 	switch r.Kind {
 	case preview.KindText:
 		for i, ln := range r.Lines {

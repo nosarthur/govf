@@ -3,6 +3,7 @@ package ui
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -24,7 +25,15 @@ const (
 	ModeSearch
 	ModeConfirm
 	ModeInput // generic prompt (rename etc)
+	ModeMenu
 )
+
+// placement: a native image drawn at a screen rect.
+type placement struct {
+	key        string
+	x, y, w, h int
+	data       []byte
+}
 
 type clipboard struct {
 	paths []string
@@ -48,7 +57,24 @@ type App struct {
 	onInput func(string) // ModeInput/ModeConfirm callback
 	quit    bool
 	pvCache pvCache
+	menu    *menu
+
+	proto    preview.Protocol
+	raw      io.Writer  // tty for image escapes; nil => blocks
+	imgWant  *placement // image requested this frame
+	imgShown *placement // image currently on screen
 }
+
+// SetImageProtocol enables native image output via raw tty writer.
+func (a *App) SetImageProtocol(p preview.Protocol, raw io.Writer) {
+	a.proto, a.raw = p, raw
+	if raw == nil {
+		a.proto = preview.ProtoBlocks
+	}
+}
+
+// invalidateImage forces re-send of native image on next draw.
+func (a *App) invalidateImage() { a.imgShown = nil }
 
 type pvCache struct {
 	key string
@@ -86,6 +112,7 @@ func (a *App) Run() {
 		switch ev := ev.(type) {
 		case *tcell.EventResize:
 			a.scr.Sync()
+			a.invalidateImage()
 		case *tcell.EventKey:
 			a.handleKey(ev)
 		}
@@ -96,6 +123,8 @@ func (a *App) handleKey(ev *tcell.EventKey) {
 	switch a.mode {
 	case ModeNormal:
 		a.handleNormal(ev)
+	case ModeMenu:
+		a.handleMenu(ev)
 	default:
 		a.handleLine(ev)
 	}
@@ -204,6 +233,7 @@ func (a *App) runExternal(cmd *exec.Cmd) {
 	}
 	err := cmd.Run()
 	a.scr.Resume()
+	a.invalidateImage()
 	a.setErr(err)
 	a.reloadAll()
 }
