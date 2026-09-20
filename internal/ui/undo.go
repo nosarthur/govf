@@ -87,6 +87,49 @@ func (a *App) trashTargets() {
 	}
 }
 
+// moveToOther moves selection/cursor entries into the other panel's dir (x); undoable.
+func (a *App) moveToOther() { a.transferToOther(true) }
+
+// copyToOther copies selection/cursor entries into the other panel's dir; undoable.
+func (a *App) copyToOther() { a.transferToOther(false) }
+
+func (a *App) transferToOther(move bool) {
+	t := a.cur().Targets()
+	dst := a.other().Dir
+	if len(t) == 0 {
+		return
+	}
+	if dst == a.cur().Dir {
+		a.setMsg("other panel is the same dir")
+		return
+	}
+	desc, kind := "copy", stepCopy
+	if move {
+		desc, kind = "move", stepMove
+	}
+	var steps []step
+	for _, src := range t {
+		var to string
+		var err error
+		if move {
+			to, err = fsx.Move(src, dst)
+		} else {
+			to, err = fsx.Copy(src, dst)
+		}
+		if err != nil {
+			a.setErr(err)
+			break
+		}
+		steps = append(steps, step{kind, src, to})
+	}
+	a.record(desc, steps...)
+	a.cur().Selected = map[string]bool{}
+	a.reloadAll()
+	if !a.msgErr {
+		a.setMsg("%d %sd to %s", len(steps), desc, dst)
+	}
+}
+
 // removeEmptyTrashSlot drops the per-item slot dir once its item is moved out.
 func (a *App) removeEmptyTrashSlot(p string) {
 	if d := filepath.Dir(p); filepath.Dir(d) == a.trash {

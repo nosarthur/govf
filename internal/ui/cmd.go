@@ -37,6 +37,10 @@ func (a *App) runCommand(line string) {
 		a.yank(false)
 	case "paste":
 		a.paste()
+	case "move", "m":
+		a.moveToOther()
+	case "copy", "co":
+		a.copyToOther()
 	case "undo":
 		a.undo()
 	case "redo":
@@ -62,7 +66,7 @@ func (a *App) runCommand(line string) {
 	case "sync":
 		a.other().Load(a.cur().Dir)
 	case "help", "h":
-		a.setMsg("j/k h/l gg/G Tab w t yy dd p u C-r DD cw a A za S(sort) / n N :q")
+		a.setMsg("j/k h/l gg/G Tab w t yy dd p x u C-r DD cw a A za S(sort) / n N :q")
 	default:
 		a.setMsg("unknown command: %s", name)
 	}

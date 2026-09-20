@@ -455,6 +455,48 @@ func TestTrashUndoRedo(t *testing.T) {
 	}
 }
 
+func TestMoveToOther(t *testing.T) {
+	d := setup(t)
+	a, _ := newTestApp(t, d)
+	alpha := filepath.Join(d, "alpha.txt")
+	beta := filepath.Join(d, "beta.txt")
+	dir1 := filepath.Join(d, "dir1")
+	// same dir on both panels: refused
+	keys(a, "/alpha\nx")
+	if !exists(alpha) || a.msg != "other panel is the same dir" {
+		t.Fatalf("same-dir x: %q", a.msg)
+	}
+	// other panel -> dir1, select alpha+beta, x moves both
+	keys(a, "\tggl\t")
+	if a.other().Dir != dir1 || a.active != 0 {
+		t.Fatalf("setup other=%s active=%d", a.other().Dir, a.active)
+	}
+	keys(a, "/alpha\nt/beta\ntx")
+	if exists(alpha) || exists(beta) || !exists(filepath.Join(dir1, "alpha.txt")) || !exists(filepath.Join(dir1, "beta.txt")) {
+		t.Fatal("x move")
+	}
+	if len(a.cur().Selected) != 0 || len(a.undoStack) != 1 || a.undoStack[0].desc != "move" {
+		t.Fatalf("x state: sel=%d undo=%+v", len(a.cur().Selected), a.undoStack)
+	}
+	keys(a, "u")
+	if !exists(alpha) || !exists(beta) || exists(filepath.Join(dir1, "alpha.txt")) {
+		t.Fatal("undo x")
+	}
+	a.handleKey(tcell.NewEventKey(tcell.KeyCtrlR, 0, 0))
+	if exists(alpha) || !exists(filepath.Join(dir1, "alpha.txt")) {
+		t.Fatal("redo x")
+	}
+	// :copy to other, undo trashes the copy
+	keys(a, "u/alpha\n:copy\n")
+	if !exists(alpha) || !exists(filepath.Join(dir1, "alpha.txt")) {
+		t.Fatal(":copy")
+	}
+	keys(a, "u")
+	if !exists(alpha) || exists(filepath.Join(dir1, "alpha.txt")) {
+		t.Fatal("undo :copy")
+	}
+}
+
 func TestSplitExt(t *testing.T) {
 	cases := []struct {
 		name      string

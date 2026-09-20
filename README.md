@@ -22,7 +22,8 @@ two independent panels.
 | `t`, `Space` | toggle selection (Space also moves down) |
 | `yy` / `p` | yank / paste (copy) into current dir |
 | `dd` | delete to trash (`~/.local/share/govf/trash`, or `$GOVF_TRASH`); `p` afterwards puts it back into current dir |
-| `u` / `Ctrl-r` | undo / redo last file op (dd, p, rename, mkdir, touch) |
+| `x` | move selection / cursor entry to the other panel's dir (like vifm `:move`) |
+| `u` / `Ctrl-r` | undo / redo last file op (dd, p, x, rename, mkdir, touch) |
 | `DD`, `D`, `Del` | delete permanently (confirm, not undoable) |
 | `yf` / `yd` / `yn` | copy full path / current dir path / file name to system clipboard |
 | `A`, `cw` | rename, editing full name incl. extension |
@@ -38,7 +39,8 @@ two independent panels.
 ## Commands (`:`)
 
 `q` `cd PATH` `mkdir NAME` `touch NAME` `rename NAME` `delete` (to trash)
-`yank` `paste` `undo` `redo` `empty` (trash) `trash` (cd there)
+`yank` `paste` `move` / `copy` (to other panel) `undo` `redo` `empty` (trash)
+`trash` (cd there)
 `sort name|size|time|reverse` `reverse` `hidden` `view` `sync` `help`
 
 `mkdir`/`touch`/`rename` without an argument prompt for input.

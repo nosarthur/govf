@@ -81,6 +81,7 @@ func init() {
 		"yn":    (*App).yankName,
 		"dd":    (*App).trashTargets,
 		"p":     (*App).paste,
+		"x":     (*App).moveToOther,
 		"u":     (*App).undo,
 		"<C-r>": (*App).redo,
 		"D":     (*App).deleteTargets, "DD": (*App).deleteTargets, "<Del>": (*App).deleteTargets,
