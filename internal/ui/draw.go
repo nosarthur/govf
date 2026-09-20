@@ -141,10 +141,7 @@ func (a *App) drawPanel(x, y, w, h int, p *Panel, active bool) {
 		if active && idx == p.Cur {
 			st = st.Reverse(true)
 		}
-		right := fsx.HumanSize(e.Size)
-		if e.IsDir {
-			right = ""
-		}
+		right := infoColumn(e, p.Sort.Key)
 		nameW := w - len(prefix) - len(right) - 1
 		if nameW < 1 {
 			nameW = 1
@@ -162,6 +159,18 @@ func (a *App) render(path string, w, h int) preview.Result {
 		}
 	}
 	return preview.File(path, w, h)
+}
+
+// infoColumn: right-hand column follows sort key (vifm-like): mtime when
+// sorting by time, else size (blank for dirs).
+func infoColumn(e fsx.Entry, key fsx.SortKey) string {
+	if key == fsx.SortTime {
+		return e.ModTime.Format("01/02 15:04")
+	}
+	if e.IsDir {
+		return ""
+	}
+	return fsx.HumanSize(e.Size)
 }
 
 // entryStyle: dir > link > image > plain.

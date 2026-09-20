@@ -8,6 +8,7 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -133,6 +134,15 @@ func TestAppNavAndOps(t *testing.T) {
 	keys(a, ":sort time\n")
 	if a.cur().Sort.Key.String() != "time" {
 		t.Error(":sort time")
+	}
+	a.draw()
+	if out := screenText(s); !regexp.MustCompile(`dir1/\s+\d\d/\d\d \d\d:\d\d`).MatchString(out) {
+		t.Errorf("time column missing under time sort:\n%s", out)
+	}
+	keys(a, "Sn")
+	a.draw()
+	if out := screenText(s); !regexp.MustCompile(`alpha\.txt\s+1B`).MatchString(out) {
+		t.Errorf("size column missing under name sort:\n%s", out)
 	}
 	keys(a, "Sn")
 	keys(a, "Sr")

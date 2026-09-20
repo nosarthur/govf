@@ -20,8 +20,11 @@ type Panel struct {
 	Err      error
 }
 
+// DefaultSort for new panels: newest first.
+var DefaultSort = fsx.SortSpec{Key: fsx.SortTime, Reverse: true}
+
 func NewPanel(dir string) *Panel {
-	p := &Panel{Selected: map[string]bool{}, lastPos: map[string]string{}}
+	p := &Panel{Selected: map[string]bool{}, lastPos: map[string]string{}, Sort: DefaultSort}
 	p.Load(dir)
 	return p
 }

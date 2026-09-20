@@ -26,7 +26,7 @@ two independent panels.
 | `A`, `cw` | rename, editing full name incl. extension |
 | `a` | rename, editing name without its extension |
 | `za` | toggle dotfiles |
-| `S` | sort menu: `n` name, `s` size, `t` time, `r` reverse (j/k + Enter also work) |
+| `S` | sort menu: `n` name, `s` size, `t` time, `r` reverse (j/k + Enter also work). Default: time, newest first. Right column shows mtime under time sort, size otherwise |
 | `/`, `n`, `N` | search by substring, next / prev |
 | `~` | home dir |
 | `Ctrl-l` | reload both panels |

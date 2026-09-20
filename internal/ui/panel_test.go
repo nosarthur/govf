@@ -4,7 +4,37 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
+
+	"github.com/nosarthur/govf/internal/fsx"
 )
+
+// TestMain: name order in tests; time order is the runtime default.
+func TestMain(m *testing.M) {
+	DefaultSort = fsx.SortSpec{Key: fsx.SortName}
+	os.Exit(m.Run())
+}
+
+func TestDefaultSortIsTime(t *testing.T) {
+	d := setup(t)
+	saved := DefaultSort
+	DefaultSort = fsx.SortSpec{Key: fsx.SortTime, Reverse: true}
+	defer func() { DefaultSort = saved }()
+	os.Chtimes(filepath.Join(d, "alpha.txt"), time.Unix(1e9, 0), time.Unix(1e9, 0))
+	os.Chtimes(filepath.Join(d, "beta.txt"), time.Unix(2e9, 0), time.Unix(2e9, 0))
+	p := NewPanel(d)
+	if p.Sort != DefaultSort || p.Entries[2].Name != "beta.txt" || p.Entries[3].Name != "alpha.txt" {
+		t.Errorf("default sort: %v %v", p.Sort, names(p.Entries))
+	}
+}
+
+func names(es []fsx.Entry) []string {
+	out := make([]string, len(es))
+	for i, e := range es {
+		out[i] = e.Name
+	}
+	return out
+}
 
 func setup(t *testing.T) string {
 	d := t.TempDir()
