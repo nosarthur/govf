@@ -2,6 +2,7 @@ package ui
 
 import (
 	"bytes"
+	"encoding/base64"
 	"image"
 	"image/color"
 	"image/png"
@@ -250,7 +251,7 @@ func TestNativeImageFlush(t *testing.T) {
 	os.WriteFile(filepath.Join(d, "a.txt"), []byte("hi"), 0o644)
 	a, s := newTestApp(t, d)
 	var raw bytes.Buffer
-	a.SetImageProtocol(preview.ProtoITerm, &raw)
+	a.SetTerminal(&raw, preview.ProtoITerm)
 	keys(a, "j") // g.png
 	a.draw()
 	out := raw.String()
@@ -271,12 +272,47 @@ func TestNativeImageFlush(t *testing.T) {
 		t.Error("image still shown")
 	}
 	// blocks fallback when no writer
-	a.SetImageProtocol(preview.ProtoITerm, nil)
+	a.SetTerminal(nil, preview.ProtoITerm)
 	a.pvCache = pvCache{}
 	keys(a, "j")
 	a.draw()
 	if !strings.Contains(screenText(s), "▀") {
 		t.Error("blocks fallback")
+	}
+}
+
+func TestYankClipboard(t *testing.T) {
+	d := setup(t)
+	a, _ := newTestApp(t, d)
+	a.clipTool = nil // don't touch real clipboard
+	keys(a, "yf")
+	if a.msg != "no clipboard available" {
+		t.Errorf("no tty msg: %q", a.msg)
+	}
+	var raw bytes.Buffer
+	a.SetTerminal(&raw, preview.ProtoBlocks)
+	b64 := func(s string) string { return base64.StdEncoding.EncodeToString([]byte(s)) }
+	keys(a, "yf")
+	if want := "\x1b]52;c;" + b64(filepath.Join(d, "dir1")) + "\a"; raw.String() != want {
+		t.Errorf("yf: %q", raw.String())
+	}
+	raw.Reset()
+	keys(a, "yd")
+	if want := "\x1b]52;c;" + b64(d) + "\a"; raw.String() != want {
+		t.Errorf("yd: %q", raw.String())
+	}
+	raw.Reset()
+	keys(a, "jjyn")
+	if want := "\x1b]52;c;" + b64("alpha.txt") + "\a"; raw.String() != want {
+		t.Errorf("yn: %q", raw.String())
+	}
+	if !strings.HasPrefix(a.msg, "copied name: alpha.txt") {
+		t.Errorf("msg %q", a.msg)
+	}
+	// yy still works after y-prefix additions
+	keys(a, "yy")
+	if len(a.clip.paths) != 1 {
+		t.Error("yy")
 	}
 }
 

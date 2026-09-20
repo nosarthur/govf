@@ -44,11 +44,9 @@ func main() {
 	}
 	defer scr.Fini()
 	app := ui.New(scr, left, right)
-	if proto := preview.DetectProtocol(os.Getenv); proto != preview.ProtoBlocks {
-		if ts, ok := scr.(interface{ Tty() (tcell.Tty, bool) }); ok {
-			if tty, ok := ts.Tty(); ok {
-				app.SetImageProtocol(proto, tty)
-			}
+	if ts, ok := scr.(interface{ Tty() (tcell.Tty, bool) }); ok {
+		if tty, ok := ts.Tty(); ok {
+			app.SetTerminal(tty, preview.DetectProtocol(os.Getenv))
 		}
 	}
 	app.Run()

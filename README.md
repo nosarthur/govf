@@ -21,6 +21,7 @@ two independent panels.
 | `w` | toggle preview panel |
 | `t`, `Space` | toggle selection (Space also moves down) |
 | `yy` / `dd` / `p` | yank / cut / paste into current dir |
+| `yf` / `yd` / `yn` | copy full path / current dir path / file name to system clipboard |
 | `D`, `Del` | delete selection or cursor (confirm) |
 | `cw` | rename |
 | `za` | toggle dotfiles |
@@ -37,6 +38,13 @@ two independent panels.
 `paste` `sort name|size|time|reverse` `reverse` `hidden` `view` `sync` `help`
 
 `mkdir`/`touch`/`rename` without an argument prompt for input.
+
+## Clipboard
+
+`yf`/`yd`/`yn` send an OSC 52 escape (reaches your local clipboard over ssh in
+iTerm2/kitty/WezTerm; iTerm2 needs Prefs → General → Selection → "Applications
+in terminal may access clipboard") and also pipe to `pbcopy`/`wl-copy`/`xclip`/
+`xsel` if one exists.
 
 ## Preview
 

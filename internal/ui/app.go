@@ -59,14 +59,16 @@ type App struct {
 	pvCache pvCache
 	menu    *menu
 
+	clipTool []string // external clipboard cmd, if any
+
 	proto    preview.Protocol
-	raw      io.Writer  // tty for image escapes; nil => blocks
+	raw      io.Writer  // tty for image/clipboard escapes; nil => blocks, no OSC52
 	imgWant  *placement // image requested this frame
 	imgShown *placement // image currently on screen
 }
 
-// SetImageProtocol enables native image output via raw tty writer.
-func (a *App) SetImageProtocol(p preview.Protocol, raw io.Writer) {
+// SetTerminal sets raw tty writer (image + OSC52 escapes) and image protocol.
+func (a *App) SetTerminal(raw io.Writer, p preview.Protocol) {
 	a.proto, a.raw = p, raw
 	if raw == nil {
 		a.proto = preview.ProtoBlocks
@@ -87,6 +89,7 @@ func New(scr tcell.Screen, left, right string) *App {
 	a.panels[0] = NewPanel(left)
 	a.panels[1] = NewPanel(right)
 	a.preview = true
+	a.clipTool = findClipTool()
 	return a
 }
 
