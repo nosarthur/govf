@@ -311,15 +311,44 @@ func (a *App) deleteTargets() {
 	})
 }
 
-func (a *App) rename() {
+// rename prompts for full name (cw).
+func (a *App) rename() { a.renameWith(false) }
+
+// renameStem prompts for name without extension; ext kept (a).
+func (a *App) renameStem() { a.renameWith(true) }
+
+// splitExt: ("a.tar", ".gz"); dirs and dotfiles like ".bashrc" have no ext.
+func splitExt(e *fsx.Entry) (stem, ext string) {
+	if e.IsDir {
+		return e.Name, ""
+	}
+	ext = filepath.Ext(e.Name)
+	if ext == e.Name {
+		return e.Name, ""
+	}
+	return strings.TrimSuffix(e.Name, ext), ext
+}
+
+func (a *App) renameWith(keepExt bool) {
 	e := a.cur().Current()
 	if e == nil {
 		return
 	}
 	old := e.Path
-	a.startLine(ModeInput, "rename: ", e.Name, func(name string) {
+	initial, ext, prompt := e.Name, "", "rename: "
+	if keepExt {
+		initial, ext = splitExt(e)
+		if ext != "" {
+			prompt = "rename (" + ext + "): "
+		}
+	}
+	a.startLine(ModeInput, prompt, initial, func(name string) {
 		name = strings.TrimSpace(name)
-		if name == "" || name == filepath.Base(old) {
+		if name == "" {
+			return
+		}
+		name += ext
+		if name == filepath.Base(old) {
 			return
 		}
 		if err := fsx.Rename(old, filepath.Join(filepath.Dir(old), name)); err != nil {

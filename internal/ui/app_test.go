@@ -38,6 +38,8 @@ func keys(a *App, seq string) {
 			ev = tcell.NewEventKey(tcell.KeyTab, 0, 0)
 		case '\x1b':
 			ev = tcell.NewEventKey(tcell.KeyEscape, 0, 0)
+		case '\x08':
+			ev = tcell.NewEventKey(tcell.KeyBackspace, 0, 0)
 		default:
 			ev = tcell.NewEventKey(tcell.KeyRune, r, 0)
 		}
@@ -207,6 +209,19 @@ func TestAppNavAndOps(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(d, "dir1", "gamma.txt")); err != nil {
 		t.Error("rename")
 	}
+	// a: edit stem, keep ext
+	keys(a, "/gamma\n")
+	keys(a, "a")
+	if a.mode != ModeInput || a.input != "gamma" || a.prompt != "rename (.txt): " {
+		t.Errorf("a prompt: mode=%v input=%q prompt=%q", a.mode, a.input, a.prompt)
+	}
+	keys(a, "\x08\x08\x08\x08\x08delta\n")
+	if _, err := os.Stat(filepath.Join(d, "dir1", "delta.txt")); err != nil {
+		t.Error("a rename kept ext")
+	}
+	if a.cur().Current().Name != "delta.txt" {
+		t.Error("cursor after a rename")
+	}
 	// selection + delete with confirm
 	keys(a, "gg")
 	keys(a, "tj")
@@ -313,6 +328,26 @@ func TestYankClipboard(t *testing.T) {
 	keys(a, "yy")
 	if len(a.clip.paths) != 1 {
 		t.Error("yy")
+	}
+}
+
+func TestSplitExt(t *testing.T) {
+	cases := []struct {
+		name      string
+		dir       bool
+		stem, ext string
+	}{
+		{"a.txt", false, "a", ".txt"},
+		{"a.tar.gz", false, "a.tar", ".gz"},
+		{".bashrc", false, ".bashrc", ""},
+		{"README", false, "README", ""},
+		{"v1.0", true, "v1.0", ""},
+	}
+	for _, c := range cases {
+		s, e := splitExt(&fsx.Entry{Name: c.name, IsDir: c.dir})
+		if s != c.stem || e != c.ext {
+			t.Errorf("%s: got %q %q", c.name, s, e)
+		}
 	}
 }
 

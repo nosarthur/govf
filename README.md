@@ -23,7 +23,8 @@ two independent panels.
 | `yy` / `dd` / `p` | yank / cut / paste into current dir |
 | `yf` / `yd` / `yn` | copy full path / current dir path / file name to system clipboard |
 | `D`, `Del` | delete selection or cursor (confirm) |
-| `cw` | rename |
+| `cw` | rename (full name) |
+| `a` | rename, editing name without its extension |
 | `za` | toggle dotfiles |
 | `S` | sort menu: `n` name, `s` size, `t` time, `r` reverse (j/k + Enter also work) |
 | `/`, `n`, `N` | search by substring, next / prev |
