@@ -147,6 +147,10 @@ func (a *App) handleLine(ev *tcell.EventKey) {
 		a.onInput = nil
 	case tcell.KeyEnter:
 		text := a.input
+		if a.mode == ModeInput && strings.TrimSpace(text) == "" {
+			a.msg, a.msgErr = "empty name not accepted (Esc to cancel)", true
+			return // stay in prompt
+		}
 		m, cb := a.mode, a.onInput
 		a.mode, a.input, a.onInput = ModeNormal, "", nil
 		switch m {
@@ -162,7 +166,9 @@ func (a *App) handleLine(ev *tcell.EventKey) {
 		}
 	case tcell.KeyBackspace, tcell.KeyBackspace2:
 		if a.input == "" {
-			a.mode, a.onInput = ModeNormal, nil
+			if a.mode != ModeInput { // ':' and '/' close on empty backspace, prompts stay
+				a.mode, a.onInput = ModeNormal, nil
+			}
 			return
 		}
 		r := []rune(a.input)
@@ -335,11 +341,14 @@ func (a *App) deleteTargets() {
 	})
 }
 
-// rename prompts for full name (cw).
-func (a *App) rename() { a.renameWith(false) }
+// rename prompts for full name (cw, A).
+func (a *App) rename() { a.renameWith(false, false) }
 
 // renameStem prompts for name without extension; ext kept (a).
-func (a *App) renameStem() { a.renameWith(true) }
+func (a *App) renameStem() { a.renameWith(true, false) }
+
+// renameClear prompts with empty field; whole name replaced (cc).
+func (a *App) renameClear() { a.renameWith(false, true) }
 
 // splitExt: ("a.tar", ".gz"); dirs and dotfiles like ".bashrc" have no ext.
 func splitExt(e *fsx.Entry) (stem, ext string) {
@@ -353,7 +362,7 @@ func splitExt(e *fsx.Entry) (stem, ext string) {
 	return strings.TrimSuffix(e.Name, ext), ext
 }
 
-func (a *App) renameWith(keepExt bool) {
+func (a *App) renameWith(keepExt, clear bool) {
 	e := a.cur().Current()
 	if e == nil {
 		return
@@ -366,12 +375,11 @@ func (a *App) renameWith(keepExt bool) {
 			prompt = "rename (" + ext + "): "
 		}
 	}
+	if clear {
+		initial = ""
+	}
 	a.startLine(ModeInput, prompt, initial, func(name string) {
-		name = strings.TrimSpace(name)
-		if name == "" {
-			return
-		}
-		name += ext
+		name = strings.TrimSpace(name) + ext
 		if name == filepath.Base(old) {
 			return
 		}

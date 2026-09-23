@@ -233,6 +233,38 @@ func TestAppNavAndOps(t *testing.T) {
 	if a.cur().Current().Name != "delta.txt" {
 		t.Error("cursor after a rename")
 	}
+	// prompt stays on empty backspace / empty enter; Esc cancels
+	keys(a, "a\x08\x08\x08\x08\x08\x08\x08")
+	if a.mode != ModeInput || a.input != "" {
+		t.Errorf("backspace closed prompt: mode=%v input=%q", a.mode, a.input)
+	}
+	keys(a, "\n")
+	if a.mode != ModeInput || !a.msgErr {
+		t.Errorf("empty enter accepted: mode=%v msg=%q", a.mode, a.msg)
+	}
+	a.draw()
+	if !strings.Contains(screenText(s), "empty name not accepted") {
+		t.Error("empty-name error not shown")
+	}
+	keys(a, "\x1b")
+	if a.mode != ModeNormal || !exists(filepath.Join(d, "dir1", "delta.txt")) {
+		t.Error("esc cancel")
+	}
+	// cc: empty field, full replace
+	keys(a, "cc")
+	if a.mode != ModeInput || a.input != "" || a.prompt != "rename: " {
+		t.Errorf("cc prompt: input=%q prompt=%q", a.input, a.prompt)
+	}
+	keys(a, "eps.log\n")
+	if !exists(filepath.Join(d, "dir1", "eps.log")) || exists(filepath.Join(d, "dir1", "delta.txt")) {
+		t.Error("cc rename")
+	}
+	keys(a, ":rename delta.txt\n")
+	// ':' still closes on empty backspace
+	keys(a, ":\x08")
+	if a.mode != ModeNormal {
+		t.Error("cmdline backspace close")
+	}
 	// A: full name incl. ext
 	keys(a, "A")
 	if a.mode != ModeInput || a.input != "delta.txt" || a.prompt != "rename: " {

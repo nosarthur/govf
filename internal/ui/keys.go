@@ -86,6 +86,7 @@ func init() {
 		"<C-r>": (*App).redo,
 		"D":     (*App).deleteTargets, "DD": (*App).deleteTargets, "<Del>": (*App).deleteTargets,
 		"cw":    (*App).rename,
+		"cc":    (*App).renameClear,
 		"A":     (*App).rename,
 		"a":     (*App).renameStem,
 		"za":    (*App).toggleHidden,

@@ -255,6 +255,9 @@ func (a *App) drawStatus(y, w int) {
 	if e := p.Current(); e != nil {
 		left = fmt.Sprintf("%s %s %s", e.Mode.String(), fsx.HumanSize(e.Size), e.ModTime.Format("2006-01-02 15:04"))
 	}
+	if a.mode != ModeNormal && a.msgErr { // cmdline is busy; surface error here
+		left = a.msg
+	}
 	nsel := len(p.Selected)
 	right := fmt.Sprintf("sort:%s", p.Sort)
 	if p.Hidden {

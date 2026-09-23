@@ -28,6 +28,7 @@ two independent panels.
 | `yf` / `yd` / `yn` | copy full path / current dir path / file name to system clipboard |
 | `A`, `cw` | rename, editing full name incl. extension |
 | `a` | rename, editing name without its extension |
+| `cc` | rename, starting from an empty name |
 | `za` | toggle dotfiles |
 | `S` | sort menu: `n` name, `s` size, `t` time, `r` reverse (j/k + Enter also work). Default: time, newest first. Right column shows mtime under time sort, size otherwise |
 | `/`, `n`, `N` | search by substring, next / prev |
@@ -43,7 +44,8 @@ two independent panels.
 `trash` (cd there)
 `sort name|size|time|reverse` `reverse` `hidden` `view` `sync` `help`
 
-`mkdir`/`touch`/`rename` without an argument prompt for input.
+`mkdir`/`touch`/`rename` without an argument prompt for input. In prompts,
+Enter confirms (empty is rejected) and Esc cancels; Backspace never closes them.
 
 ## Clipboard
 
