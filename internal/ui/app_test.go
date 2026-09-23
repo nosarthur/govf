@@ -250,13 +250,13 @@ func TestAppNavAndOps(t *testing.T) {
 	if a.mode != ModeNormal || !exists(filepath.Join(d, "dir1", "delta.txt")) {
 		t.Error("esc cancel")
 	}
-	// cc: empty field, full replace
+	// cc: empty stem, ext kept
 	keys(a, "cc")
-	if a.mode != ModeInput || a.input != "" || a.prompt != "rename: " {
+	if a.mode != ModeInput || a.input != "" || a.prompt != "rename (.txt): " {
 		t.Errorf("cc prompt: input=%q prompt=%q", a.input, a.prompt)
 	}
-	keys(a, "eps.log\n")
-	if !exists(filepath.Join(d, "dir1", "eps.log")) || exists(filepath.Join(d, "dir1", "delta.txt")) {
+	keys(a, "eps\n")
+	if !exists(filepath.Join(d, "dir1", "eps.txt")) || exists(filepath.Join(d, "dir1", "delta.txt")) {
 		t.Error("cc rename")
 	}
 	keys(a, ":rename delta.txt\n")

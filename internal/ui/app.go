@@ -347,8 +347,8 @@ func (a *App) rename() { a.renameWith(false, false) }
 // renameStem prompts for name without extension; ext kept (a).
 func (a *App) renameStem() { a.renameWith(true, false) }
 
-// renameClear prompts with empty field; whole name replaced (cc).
-func (a *App) renameClear() { a.renameWith(false, true) }
+// renameClear prompts with empty stem; ext kept (cc).
+func (a *App) renameClear() { a.renameWith(true, true) }
 
 // splitExt: ("a.tar", ".gz"); dirs and dotfiles like ".bashrc" have no ext.
 func splitExt(e *fsx.Entry) (stem, ext string) {

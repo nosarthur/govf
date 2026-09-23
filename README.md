@@ -28,7 +28,7 @@ two independent panels.
 | `yf` / `yd` / `yn` | copy full path / current dir path / file name to system clipboard |
 | `A`, `cw` | rename, editing full name incl. extension |
 | `a` | rename, editing name without its extension |
-| `cc` | rename, starting from an empty name |
+| `cc` | rename, starting from an empty name; extension kept |
 | `za` | toggle dotfiles |
 | `S` | sort menu: `n` name, `s` size, `t` time, `r` reverse (j/k + Enter also work). Default: time, newest first. Right column shows mtime under time sort, size otherwise |
 | `/`, `n`, `N` | search by substring, next / prev |
