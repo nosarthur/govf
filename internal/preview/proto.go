@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/png"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/image/draw"
@@ -149,8 +150,31 @@ func KittySeq(pngData []byte, cols, rows int) []byte {
 // KittyDelete clears all visible kitty images.
 func KittyDelete() []byte { return []byte("\x1b_Ga=d,d=A,q=2\x1b\\") }
 
+// itermRawExts: formats iTerm2 (macOS) renders itself; sent as-is, no Go decode.
+var itermRawExts = map[string]bool{".svg": true, ".pdf": true}
+
+const maxRawITermBytes = 16 << 20
+
+func nativeRaw(path string) Result {
+	st, err := os.Stat(path)
+	if err != nil {
+		return Result{Kind: KindError, Err: err}
+	}
+	if st.Size() > maxRawITermBytes {
+		return Result{Kind: KindError, Err: fmt.Errorf("too large to preview (%d MB)", st.Size()>>20)}
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return Result{Kind: KindError, Err: err}
+	}
+	return Result{Kind: KindImage, Data: data}
+}
+
 // Native renders path as a protocol payload; falls back to Text on failure.
 func Native(path string, proto Protocol) Result {
+	if proto == ProtoITerm && itermRawExts[strings.ToLower(filepath.Ext(path))] {
+		return nativeRaw(path)
+	}
 	if !IsImagePath(path) {
 		return Result{Kind: KindNone}
 	}

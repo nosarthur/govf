@@ -72,3 +72,5 @@ in terminal may access clipboard") and also pipe to `pbcopy`/`wl-copy`/`xclip`/
   kitty graphics protocol. Elsewhere (or under tmux) images fall back to `▀`
   truecolor half-block cells. Override with `GOVF_IMAGES=iterm|kitty|blocks`.
   Large or non-png/jpeg/gif files are re-encoded as PNG at most 1600px.
+  On iTerm2, `.svg` and `.pdf` are also sent as-is and rendered by macOS;
+  elsewhere svg shows as text.

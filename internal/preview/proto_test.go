@@ -88,6 +88,27 @@ func TestEncodeAndNative(t *testing.T) {
 	if r := Native(filepath.Join(d, "x.txt"), ProtoITerm); r.Kind != KindNone {
 		t.Error("native non-image")
 	}
+	// svg/pdf: raw bytes on iterm, not an image elsewhere
+	svg := filepath.Join(d, "v.svg")
+	svgData := []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"/>`)
+	os.WriteFile(svg, svgData, 0o644)
+	if r := Native(svg, ProtoITerm); r.Kind != KindImage || !bytes.Equal(r.Data, svgData) {
+		t.Errorf("svg iterm: %v", r.Kind)
+	}
+	if r := Native(svg, ProtoKitty); r.Kind != KindError {
+		t.Errorf("svg kitty should fail decode: %v", r.Kind)
+	}
+	if r := File(svg, 10, 5); r.Kind != KindText {
+		t.Errorf("svg fallback text: %v", r.Kind)
+	}
+	pdf := filepath.Join(d, "p.pdf")
+	os.WriteFile(pdf, []byte("%PDF-1.4\n"), 0o644)
+	if r := Native(pdf, ProtoITerm); r.Kind != KindImage {
+		t.Errorf("pdf iterm: %v", r.Kind)
+	}
+	if r := Native(pdf, ProtoBlocks); r.Kind != KindNone {
+		t.Errorf("pdf blocks: %v", r.Kind)
+	}
 	bad := filepath.Join(d, "bad.png")
 	os.WriteFile(bad, []byte("nope"), 0o644)
 	if r := Native(bad, ProtoITerm); r.Kind != KindError {

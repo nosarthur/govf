@@ -54,6 +54,7 @@ const (
 var imageExts = map[string]bool{
 	".png": true, ".jpg": true, ".jpeg": true, ".gif": true,
 	".bmp": true, ".tiff": true, ".tif": true, ".webp": true,
+	".svg": true, // rendered natively on iTerm2 only; text elsewhere
 }
 
 // IsImagePath: by extension.
