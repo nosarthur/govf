@@ -17,6 +17,7 @@ const version = "0.1.0"
 
 func main() {
 	showVer := flag.Bool("version", false, "print version")
+	chooseDir := flag.String("choose-dir", "", "on quit write active panel dir to FILE ('-' = stdout)")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "usage: govf [-version] [LEFT_DIR [RIGHT_DIR]]\n")
 		flag.PrintDefaults()
@@ -50,6 +51,20 @@ func main() {
 		}
 	}
 	app.Run()
+	scr.Fini()
+	if *chooseDir != "" {
+		if err := writeChosenDir(*chooseDir, app.CurrentDir()); err != nil {
+			fatal(err)
+		}
+	}
+}
+
+func writeChosenDir(dst, dir string) error {
+	if dst == "-" {
+		_, err := fmt.Println(dir)
+		return err
+	}
+	return os.WriteFile(dst, []byte(dir+"\n"), 0o644)
 }
 
 func absDir(p string) string {

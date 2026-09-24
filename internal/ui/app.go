@@ -239,8 +239,16 @@ func (a *App) openFile(path string) {
 	a.runExternal(cmd)
 }
 
+// CurrentDir: active panel's directory.
+func (a *App) CurrentDir() string { return a.cur().Dir }
+
 func (a *App) runExternal(cmd *exec.Cmd) {
+	// children talk to the terminal directly; stdout may be captured (-choose-dir -)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	if tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0); err == nil {
+		defer tty.Close()
+		cmd.Stdin, cmd.Stdout, cmd.Stderr = tty, tty, tty
+	}
 	if err := a.scr.Suspend(); err != nil {
 		a.setErr(err)
 		return

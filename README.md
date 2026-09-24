@@ -47,6 +47,16 @@ two independent panels.
 `mkdir`/`touch`/`rename` without an argument prompt for input. In prompts,
 Enter confirms (empty is rejected) and Esc cancels; Backspace never closes them.
 
+## cd to last dir on quit
+
+A program cannot change its parent shell's directory, so govf writes the
+active panel's dir on quit (`-choose-dir FILE`, `-` = stdout) and a shell
+function does the `cd`. Add to `~/.bashrc` / `~/.zshrc`:
+
+```sh
+govf() { local d; d="$(command govf -choose-dir - "$@")" && [ -n "$d" ] && cd -- "$d"; }
+```
+
 ## Clipboard
 
 `yf`/`yd`/`yn` send an OSC 52 escape (reaches your local clipboard over ssh in
